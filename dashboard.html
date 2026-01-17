@@ -9,18 +9,24 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     
     <style>
-        body { margin: 0; font-family: 'Poppins', sans-serif; background: #f0f2f5; display: flex; }
+        body { margin: 0; font-family: 'Poppins', sans-serif; background: #f0f2f5; display: flex; overflow-x: hidden; }
         
         /* Sidebar */
-        .sidebar { width: 250px; background: #0b1021; height: 100vh; color: white; padding: 20px; position: fixed; }
+        .sidebar { width: 250px; background: #0b1021; height: 100vh; color: white; padding: 20px; position: fixed; display: flex; flex-direction: column; }
         .sidebar h2 { font-size: 1.2rem; margin-bottom: 40px; text-align: center; color: #00d4ff; border-bottom: 1px solid #1f4068; padding-bottom: 20px;}
         .menu-item { padding: 15px; border-radius: 10px; background: transparent; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; color: #a0a0a0; cursor: pointer; transition: 0.3s;}
-        .menu-item:hover, .menu-item.active { background: #1f4068; color: #00d4ff; }
+        .menu-item:hover { background: #1f4068; color: #00d4ff; }
+        .menu-item.active { background: #1f4068; color: #00d4ff; border-left: 4px solid #00d4ff; }
         #logout { margin-top: auto; background: #ff3333; border: none; padding: 12px; width: 100%; color: white; border-radius: 8px; cursor: pointer; font-weight: bold;}
         
-        /* Main Content */
+        /* Main Content Area */
         .main { margin-left: 290px; padding: 30px; width: calc(100% - 290px); }
-        h1 { color: #333; }
+        h1 { color: #333; margin-bottom: 20px; }
+
+        /* SECTIONS (Tabs) */
+        .view-section { display: none; animation: fadeIn 0.5s; }
+        .view-section.active-view { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
         /* Cards */
         .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
@@ -37,39 +43,33 @@
         @keyframes spin { 100% { transform: rotate(360deg); } }
         .fan-spinning { animation: spin 1s linear infinite; color: #3699ff !important; }
 
-        /* --- FIXED CHARTS SECTION --- */
-        .charts-container { 
-            display: grid; 
-            grid-template-columns: 1fr 1fr; /* Two columns */
-            gap: 20px; 
-            margin-bottom: 30px; 
-        }
-        
-        .chart-box { 
-            background: white; 
-            padding: 20px; 
-            border-radius: 15px; 
-            box-shadow: 0 5px 15px rgba(0,0,0,0.05); 
-        }
-
-        /* THIS WRAPPER FIXES THE VERTICAL STRETCHING ISSUE */
-        .canvas-wrapper {
-            position: relative; 
-            height: 300px; /* Force fixed height */
-            width: 100%;
-        }
+        /* Charts */
+        .charts-container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
+        .chart-box { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        .canvas-wrapper { position: relative; height: 300px; width: 100%; }
 
         /* Table */
-        .table-box { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        .table-box { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th { text-align: left; padding: 10px; color: #888; border-bottom: 1px solid #eee; }
-        td { padding: 10px; border-bottom: 1px solid #eee; font-size: 0.9rem; color: #333; }
+        th { text-align: left; padding: 15px; color: #555; border-bottom: 2px solid #eee; background: #f9f9f9; }
+        td { padding: 15px; border-bottom: 1px solid #eee; font-size: 0.9rem; color: #333; }
         .badge { padding: 5px 10px; border-radius: 5px; font-size: 0.8rem; font-weight: bold; }
         .b-safe { background: #c9f7f5; color: #1bc5bd; }
         .b-danger { background: #ffe2e5; color: #f64e60; }
 
+        /* Settings Styles */
+        .settings-card { background: white; padding: 30px; border-radius: 15px; margin-bottom: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        .settings-group { margin-bottom: 20px; }
+        .settings-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #555; }
+        .settings-group input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; max-width: 400px; }
+        .btn-save { padding: 10px 20px; background: #00d4ff; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+
         @media (max-width: 1000px) {
-            .charts-container { grid-template-columns: 1fr; } /* Stack on small screens */
+            .charts-container { grid-template-columns: 1fr; }
+            .sidebar { width: 60px; padding: 10px; }
+            .sidebar h2, .menu-item span { display: none; }
+            .main { margin-left: 80px; width: calc(100% - 80px); }
+            .menu-item { justify-content: center; }
         }
     </style>
 </head>
@@ -77,117 +77,181 @@
 
     <div class="sidebar">
         <h2>IOT ADMIN</h2>
-        <div class="menu-item active"><i class="fas fa-home"></i> Dashboard</div>
-        <div class="menu-item"><i class="fas fa-history"></i> Logs</div>
-        <div class="menu-item"><i class="fas fa-cog"></i> Settings</div>
+        <div class="menu-item active" onclick="switchTab('dashboard')">
+            <i class="fas fa-home"></i> <span>Dashboard</span>
+        </div>
+        <div class="menu-item" onclick="switchTab('logs')">
+            <i class="fas fa-history"></i> <span>Logs</span>
+        </div>
+        <div class="menu-item" onclick="switchTab('settings')">
+            <i class="fas fa-cog"></i> <span>Settings</span>
+        </div>
         <button id="logout" onclick="logout()">LOGOUT</button>
     </div>
 
     <div class="main">
-        <h1>Live Overview</h1>
         
-        <div class="cards">
-            <div class="card">
-                <div class="card-info"><h3>Temperature</h3><p id="temp">-- °C</p></div>
-                <div class="icon-box c-blue"><i class="fas fa-thermometer-half"></i></div>
+        <div id="view-dashboard" class="view-section active-view">
+            <h1>Live Overview</h1>
+            
+            <div class="cards">
+                <div class="card">
+                    <div class="card-info"><h3>Temperature</h3><p id="temp">-- °C</p></div>
+                    <div class="icon-box c-blue"><i class="fas fa-thermometer-half"></i></div>
+                </div>
+                <div class="card">
+                    <div class="card-info"><h3>Gas Level</h3><p id="gas">-- m³</p></div>
+                    <div class="icon-box c-red"><i class="fas fa-smog"></i></div>
+                </div>
+                <div class="card">
+                    <div class="card-info"><h3>Fan Status</h3><p id="fan">OFF</p></div>
+                    <div class="icon-box c-purple"><i id="fan-icon" class="fas fa-fan"></i></div>
+                </div>
+                <div class="card">
+                    <div class="card-info"><h3>System</h3><p id="status">--</p></div>
+                    <div class="icon-box c-green"><i class="fas fa-shield-alt"></i></div>
+                </div>
             </div>
-            <div class="card">
-                <div class="card-info"><h3>Gas Level</h3><p id="gas">-- m³</p></div>
-                <div class="icon-box c-red"><i class="fas fa-smog"></i></div>
+
+            <div class="charts-container">
+                <div class="chart-box">
+                    <h4>Temperature History</h4>
+                    <div class="canvas-wrapper"><canvas id="tempChart"></canvas></div>
+                </div>
+                <div class="chart-box">
+                    <h4>Gas Level History</h4>
+                    <div class="canvas-wrapper"><canvas id="gasChart"></canvas></div>
+                </div>
             </div>
-            <div class="card">
-                <div class="card-info"><h3>Fan Status</h3><p id="fan">OFF</p></div>
-                <div class="icon-box c-purple"><i id="fan-icon" class="fas fa-fan"></i></div>
-            </div>
-            <div class="card">
-                <div class="card-info"><h3>System</h3><p id="status">--</p></div>
-                <div class="icon-box c-green"><i class="fas fa-shield-alt"></i></div>
+
+            <div class="table-box">
+                <h4>Recent Activity (Last 5)</h4>
+                <table>
+                    <thead><tr><th>Time</th><th>Temperature</th><th>Gas Level</th><th>Fan</th><th>Status</th></tr></thead>
+                    <tbody id="dashboard-table"></tbody>
+                </table>
             </div>
         </div>
 
-        <div class="charts-container">
-            <div class="chart-box">
-                <h4>Temperature History</h4>
-                <div class="canvas-wrapper">
-                    <canvas id="tempChart"></canvas>
-                </div>
+        <div id="view-logs" class="view-section">
+            <h1>System Logs</h1>
+            <div class="table-box">
+                <h4>Full Data History (Last 50)</h4>
+                <button onclick="fetchLogs()" style="margin-bottom:15px; padding:8px 15px; cursor:pointer;">Refresh Logs</button>
+                <table>
+                    <thead><tr><th>ID</th><th>Time</th><th>Temperature</th><th>Gas Level</th><th>Fan Status</th><th>Safety</th></tr></thead>
+                    <tbody id="full-logs-table">
+                        <tr><td colspan="6">Loading data...</td></tr>
+                    </tbody>
+                </table>
             </div>
-            <div class="chart-box">
-                <h4>Gas Level History</h4>
-                <div class="canvas-wrapper">
-                    <canvas id="gasChart"></canvas>
+        </div>
+
+        <div id="view-settings" class="view-section">
+            <h1>System Settings</h1>
+            <div class="settings-card">
+                <h3>Threshold Configuration</h3>
+                <p style="color:#666; font-size:0.9rem; margin-bottom:20px;">Current hardcoded safety limits on device.</p>
+                
+                <div class="settings-group">
+                    <label>Max Temperature (°C)</label>
+                    <input type="number" value="32" disabled>
+                </div>
+                <div class="settings-group">
+                    <label>Gas Threshold (V)</label>
+                    <input type="number" value="1.5" disabled>
+                </div>
+                <button class="btn-save" onclick="alert('Thresholds are currently hardcoded in firmware.')">Update Firmware</button>
+            </div>
+
+            <div class="settings-card">
+                <h3>Admin Profile</h3>
+                <div class="settings-group">
+                    <label>Admin Username</label>
+                    <input type="text" value="admin" disabled>
+                </div>
+                <div class="settings-group">
+                    <label>System Version</label>
+                    <input type="text" value="v1.0.4 (Stable)" disabled>
                 </div>
             </div>
         </div>
 
-        <div class="table-box">
-            <h4>Recent Activity Log</h4>
-            <table>
-                <thead>
-                    <tr><th>Time</th><th>Temperature</th><th>Gas Level</th><th>Fan</th><th>Status</th></tr>
-                </thead>
-                <tbody id="history-table"></tbody>
-            </table>
-        </div>
     </div>
 
     <script>
+        // CONFIGURATION
         const SUPABASE_URL = "https://ukzntvjbkkjcawdzstcw.supabase.co";
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVrem50dmpia2tqY2F3ZHpzdGN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg2NzU0OTMsImV4cCI6MjA4NDI1MTQ5M30.MOCt8SliawQ-Krw71JQ8kqguMKDu1bO2XqXN4oqio0c";
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+        // --- AUTH ---
         if (localStorage.getItem('isLoggedIn') !== 'true') window.location.href = 'index.html';
         function logout() { localStorage.removeItem('isLoggedIn'); window.location.href = 'index.html'; }
 
-        // Chart Options: IMPORTANT to stop stretching
-        const commonOptions = { 
-            maintainAspectRatio: false, 
-            responsive: true,
-            scales: { x: { grid: { display: false } } } 
-        };
-        
+        // --- TABS LOGIC ---
+        function switchTab(tabName) {
+            // 1. Hide all views
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active-view'));
+            // 2. Remove active class from sidebar
+            document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
+            
+            // 3. Show selected view
+            document.getElementById('view-' + tabName).classList.add('active-view');
+            
+            // 4. Highlight sidebar button
+            // (Finding the button based on onclick attribute text is tricky, simpler to assume order or use ID. 
+            // For now, let's just loop and match index or manually set active class in HTML if simpler. 
+            // Let's do a simple text match for the icon class for robustness)
+            const icons = { 'dashboard': 'fa-home', 'logs': 'fa-history', 'settings': 'fa-cog' };
+            const iconClass = icons[tabName];
+            
+            // Find the menu item containing this icon and add 'active'
+            const menuItems = document.querySelectorAll('.menu-item');
+            menuItems.forEach(item => {
+                if(item.innerHTML.includes(iconClass)) {
+                    item.classList.add('active');
+                }
+            });
+
+            // 5. Special Actions
+            if(tabName === 'logs') fetchLogs();
+        }
+
+        // --- CHARTS ---
+        const commonOptions = { maintainAspectRatio: false, responsive: true, scales: { x: { grid: { display: false } } } };
         const tempChart = new Chart(document.getElementById('tempChart'), {
-            type: 'line',
-            data: { labels: [], datasets: [{ label: 'Temp (°C)', data: [], borderColor: '#3699ff', backgroundColor: 'rgba(54, 153, 255, 0.1)', fill: true, tension: 0.4 }] },
-            options: commonOptions
+            type: 'line', data: { labels: [], datasets: [{ label: 'Temp (°C)', data: [], borderColor: '#3699ff', backgroundColor: 'rgba(54, 153, 255, 0.1)', fill: true, tension: 0.4 }] }, options: commonOptions
         });
-
         const gasChart = new Chart(document.getElementById('gasChart'), {
-            type: 'line',
-            data: { labels: [], datasets: [{ label: 'Gas (m³)', data: [], borderColor: '#f64e60', backgroundColor: 'rgba(246, 78, 96, 0.1)', fill: true, tension: 0.4 }] },
-            options: commonOptions
+            type: 'line', data: { labels: [], datasets: [{ label: 'Gas (m³)', data: [], borderColor: '#f64e60', backgroundColor: 'rgba(246, 78, 96, 0.1)', fill: true, tension: 0.4 }] }, options: commonOptions
         });
 
+        // --- MAIN DASHBOARD LOOP ---
         async function updateDashboard() {
-            const { data, error } = await supabaseClient
-                .from('readings')
-                .select('*')
-                .order('id', { ascending: false })
-                .limit(5);
+            // Only update if we are looking at the dashboard
+            if(!document.getElementById('view-dashboard').classList.contains('active-view')) return;
+
+            const { data } = await supabaseClient.from('readings').select('*').order('id', { ascending: false }).limit(5);
 
             if (data && data.length > 0) {
                 const latest = data[0];
 
+                // Cards
                 document.getElementById('temp').innerText = latest.temperature + " °C";
                 document.getElementById('gas').innerText = latest.smoke_level + " m³";
                 document.getElementById('status').innerText = latest.status;
                 
-                // Fan Logic
                 let isFanOn = latest.fan_status === "ON" || latest.status === "DANGER";
                 document.getElementById('fan').innerText = isFanOn ? "ON" : "OFF";
                 const fanIcon = document.getElementById('fan-icon');
-                if (isFanOn) fanIcon.classList.add('fan-spinning');
-                else fanIcon.classList.remove('fan-spinning');
+                if (isFanOn) fanIcon.classList.add('fan-spinning'); else fanIcon.classList.remove('fan-spinning');
 
-                // Table
-                const tableBody = document.getElementById('history-table');
+                // Table (Dashboard)
+                const tableBody = document.getElementById('dashboard-table');
                 tableBody.innerHTML = ''; 
                 data.forEach(row => {
-                    const time = new Date(row.created_at).toLocaleTimeString();
-                    const badgeClass = row.status === 'DANGER' ? 'b-danger' : 'b-safe';
-                    const fanTxt = (row.fan_status === "ON" || row.status === "DANGER") ? "ON" : "OFF";
-                    
-                    tableBody.innerHTML += `<tr><td>${time}</td><td>${row.temperature}</td><td>${row.smoke_level}</td><td>${fanTxt}</td><td><span class="badge ${badgeClass}">${row.status}</span></td></tr>`;
+                    tableBody.innerHTML += generateRowHtml(row);
                 });
 
                 // Charts
@@ -199,17 +263,52 @@
             }
         }
 
+        // --- LOGS PAGE LOGIC ---
+        async function fetchLogs() {
+            const tbody = document.getElementById('full-logs-table');
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center">Loading...</td></tr>';
+
+            const { data } = await supabaseClient.from('readings').select('*').order('id', { ascending: false }).limit(50);
+            
+            if(data) {
+                tbody.innerHTML = '';
+                data.forEach(row => {
+                    const time = new Date(row.created_at).toLocaleString();
+                    const badge = row.status === 'DANGER' ? 'b-danger' : 'b-safe';
+                    const fan = (row.fan_status === "ON" || row.status === "DANGER") ? "ON" : "OFF";
+                    
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>#${row.id}</td>
+                            <td>${time}</td>
+                            <td>${row.temperature}</td>
+                            <td>${row.smoke_level}</td>
+                            <td>${fan}</td>
+                            <td><span class="badge ${badge}">${row.status}</span></td>
+                        </tr>
+                    `;
+                });
+            }
+        }
+
+        // --- HELPERS ---
+        function generateRowHtml(row) {
+            const time = new Date(row.created_at).toLocaleTimeString();
+            const badgeClass = row.status === 'DANGER' ? 'b-danger' : 'b-safe';
+            const fanTxt = (row.fan_status === "ON" || row.status === "DANGER") ? "ON" : "OFF";
+            return `<tr><td>${time}</td><td>${row.temperature}</td><td>${row.smoke_level}</td><td>${fanTxt}</td><td><span class="badge ${badgeClass}">${row.status}</span></td></tr>`;
+        }
+
         function addData(chart, label, data) {
             chart.data.labels.push(label);
             chart.data.datasets[0].data.push(data);
-            if (chart.data.labels.length > 20) {
-                chart.data.labels.shift();
-                chart.data.datasets[0].data.shift();
-            }
+            if (chart.data.labels.length > 20) { chart.data.labels.shift(); chart.data.datasets[0].data.shift(); }
             chart.update();
         }
 
-        async function loadHistory() {
+        // --- INIT ---
+        // Load initial history for charts
+        async function loadChartHistory() {
             const { data } = await supabaseClient.from('readings').select('*').order('id', { ascending: false }).limit(20);
             if (data) {
                 const history = data.reverse();
@@ -221,7 +320,7 @@
             }
         }
 
-        loadHistory();
+        loadChartHistory();
         setInterval(updateDashboard, 2000);
     </script>
 </body>
