@@ -2,25 +2,43 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Smart Ventilation System</title>
+    <title>Smart Vitilation System</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     
     <style>
+        /* FIX 1: Global Box Sizing (Prevents padding from expanding width/height) */
+        * { box-sizing: border-box; }
+
         body { margin: 0; font-family: 'Poppins', sans-serif; background: #f0f2f5; display: flex; overflow-x: hidden; }
         
-        /* Sidebar */
-        .sidebar { width: 250px; background: #0b1021; height: 100vh; color: white; padding: 20px; position: fixed; display: flex; flex-direction: column; }
+        /* FIX 2: Sidebar fixed properly within the screen limits */
+        .sidebar { 
+            width: 250px; 
+            background: #0b1021; 
+            height: 100vh; 
+            color: white; 
+            padding: 20px; 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            display: flex; 
+            flex-direction: column; 
+            z-index: 1000;
+        }
+
         .sidebar h2 { font-size: 1.2rem; margin-bottom: 40px; text-align: center; color: #00d4ff; border-bottom: 1px solid #1f4068; padding-bottom: 20px;}
         .menu-item { padding: 15px; border-radius: 10px; background: transparent; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; color: #a0a0a0; cursor: pointer; transition: 0.3s;}
         .menu-item:hover { background: #1f4068; color: #00d4ff; }
         .menu-item.active { background: #1f4068; color: #00d4ff; border-left: 4px solid #00d4ff; }
+        
+        /* Logout button stays at the bottom but inside the padding area */
         #logout { margin-top: auto; background: #ff3333; border: none; padding: 12px; width: 100%; color: white; border-radius: 8px; cursor: pointer; font-weight: bold;}
         
         /* Main Content Area */
-        .main { margin-left: 290px; padding: 30px; width: calc(100% - 290px); }
+        .main { margin-left: 250px; padding: 30px; width: calc(100% - 250px); }
         h1 { color: #333; margin-bottom: 20px; }
 
         /* SECTIONS (Tabs) */
@@ -68,7 +86,7 @@
             .charts-container { grid-template-columns: 1fr; }
             .sidebar { width: 60px; padding: 10px; }
             .sidebar h2, .menu-item span { display: none; }
-            .main { margin-left: 80px; width: calc(100% - 80px); }
+            .main { margin-left: 60px; width: calc(100% - 60px); }
             .menu-item { justify-content: center; }
         }
     </style>
@@ -191,22 +209,13 @@
 
         // --- TABS LOGIC ---
         function switchTab(tabName) {
-            // 1. Hide all views
             document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active-view'));
-            // 2. Remove active class from sidebar
             document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
-            
-            // 3. Show selected view
             document.getElementById('view-' + tabName).classList.add('active-view');
             
-            // 4. Highlight sidebar button
-            // (Finding the button based on onclick attribute text is tricky, simpler to assume order or use ID. 
-            // For now, let's just loop and match index or manually set active class in HTML if simpler. 
-            // Let's do a simple text match for the icon class for robustness)
             const icons = { 'dashboard': 'fa-home', 'logs': 'fa-history', 'settings': 'fa-cog' };
             const iconClass = icons[tabName];
             
-            // Find the menu item containing this icon and add 'active'
             const menuItems = document.querySelectorAll('.menu-item');
             menuItems.forEach(item => {
                 if(item.innerHTML.includes(iconClass)) {
@@ -214,7 +223,6 @@
                 }
             });
 
-            // 5. Special Actions
             if(tabName === 'logs') fetchLogs();
         }
 
@@ -229,7 +237,6 @@
 
         // --- MAIN DASHBOARD LOOP ---
         async function updateDashboard() {
-            // Only update if we are looking at the dashboard
             if(!document.getElementById('view-dashboard').classList.contains('active-view')) return;
 
             const { data } = await supabaseClient.from('readings').select('*').order('id', { ascending: false }).limit(5);
@@ -237,7 +244,6 @@
             if (data && data.length > 0) {
                 const latest = data[0];
 
-                // Cards
                 document.getElementById('temp').innerText = latest.temperature + " °C";
                 document.getElementById('gas').innerText = latest.smoke_level + " m³";
                 document.getElementById('status').innerText = latest.status;
@@ -247,14 +253,12 @@
                 const fanIcon = document.getElementById('fan-icon');
                 if (isFanOn) fanIcon.classList.add('fan-spinning'); else fanIcon.classList.remove('fan-spinning');
 
-                // Table (Dashboard)
                 const tableBody = document.getElementById('dashboard-table');
                 tableBody.innerHTML = ''; 
                 data.forEach(row => {
                     tableBody.innerHTML += generateRowHtml(row);
                 });
 
-                // Charts
                 const time = new Date(latest.created_at).toLocaleTimeString();
                 if (tempChart.data.labels[tempChart.data.labels.length - 1] !== time) {
                     addData(tempChart, time, latest.temperature);
@@ -277,21 +281,11 @@
                     const badge = row.status === 'DANGER' ? 'b-danger' : 'b-safe';
                     const fan = (row.fan_status === "ON" || row.status === "DANGER") ? "ON" : "OFF";
                     
-                    tbody.innerHTML += `
-                        <tr>
-                            <td>#${row.id}</td>
-                            <td>${time}</td>
-                            <td>${row.temperature}</td>
-                            <td>${row.smoke_level}</td>
-                            <td>${fan}</td>
-                            <td><span class="badge ${badge}">${row.status}</span></td>
-                        </tr>
-                    `;
+                    tbody.innerHTML += `<tr><td>#${row.id}</td><td>${time}</td><td>${row.temperature}</td><td>${row.smoke_level}</td><td>${fan}</td><td><span class="badge ${badge}">${row.status}</span></td></tr>`;
                 });
             }
         }
 
-        // --- HELPERS ---
         function generateRowHtml(row) {
             const time = new Date(row.created_at).toLocaleTimeString();
             const badgeClass = row.status === 'DANGER' ? 'b-danger' : 'b-safe';
@@ -306,8 +300,6 @@
             chart.update();
         }
 
-        // --- INIT ---
-        // Load initial history for charts
         async function loadChartHistory() {
             const { data } = await supabaseClient.from('readings').select('*').order('id', { ascending: false }).limit(20);
             if (data) {
@@ -325,4 +317,3 @@
     </script>
 </body>
 </html>
-
